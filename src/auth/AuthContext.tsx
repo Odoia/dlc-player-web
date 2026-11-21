@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { api, logoutRequest, steamLoginUrl } from '../api/client'
+import { api, discordConnectUrl, logoutRequest, steamLoginUrl } from '../api/client'
 
 export type User = {
   id: number
@@ -7,12 +7,16 @@ export type User = {
   name: string | null
   avatar_url: string | null
   profile_url: string | null
+  discord_username: string | null
+  discord_linked: boolean
 }
 
 type AuthValue = {
   user: User | null
   ready: boolean
   loginWithSteam: () => void
+  connectDiscord: () => void
+  unlinkDiscord: () => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -36,6 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = steamLoginUrl()
   }
 
+  // Conectar/verificar Discord (ja logado por Steam) — navegacao top-level pro OAuth.
+  function connectDiscord() {
+    window.location.href = discordConnectUrl()
+  }
+
+  async function unlinkDiscord() {
+    setUser(await api.del<User>('/me/discord'))
+  }
+
   async function logout() {
     try {
       await logoutRequest()
@@ -49,7 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Ctx value={{ user, ready, loginWithSteam, logout, refreshUser }}>{children}</Ctx>
+    <Ctx value={{ user, ready, loginWithSteam, connectDiscord, unlinkDiscord, logout, refreshUser }}>
+      {children}
+    </Ctx>
   )
 }
 

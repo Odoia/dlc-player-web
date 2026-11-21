@@ -18,6 +18,14 @@ type StatsResponse = { servers: ServerStats[] }
 
 const fmt = (n: number) => n.toLocaleString('pt-BR')
 
+function discordNotice(): string {
+  const v = new URLSearchParams(window.location.search).get('discord')
+  if (v === 'ok') return 'Discord conectado e verificado ✓'
+  if (v === 'taken') return 'Esse Discord ja esta vinculado a outra conta.'
+  if (v === 'login_required') return 'Entre com a Steam antes de conectar o Discord.'
+  return ''
+}
+
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <Card className="p-4">
@@ -28,7 +36,8 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 export default function Dashboard() {
-  const { user, logout } = useAuth()
+  const { user, logout, connectDiscord, unlinkDiscord } = useAuth()
+  const notice = discordNotice()
   const [servers, setServers] = useState<ServerStats[]>([])
   const [selectedId, setSelectedId] = useState('')
   const [error, setError] = useState('')
@@ -80,6 +89,46 @@ export default function Dashboard() {
           Sair
         </button>
       </header>
+
+      {notice && (
+        <p className="mb-4 rounded-lg border border-neutral-700 bg-neutral-900/60 px-3 py-2 text-sm text-neutral-300">
+          {notice}
+        </p>
+      )}
+
+      {/* Discord: vinculo (verificado) com o SteamID */}
+      <Card className="mb-6 flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-neutral-200">Discord</p>
+          {user.discord_linked ? (
+            <p className="truncate text-xs text-neutral-500">
+              <span className="text-green-400">✓ verificado</span>
+              {user.discord_username ? ` · @${user.discord_username}` : ''}
+            </p>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              Nao conectado — vincule pra ganhar honra por voz.
+            </p>
+          )}
+        </div>
+        {user.discord_linked ? (
+          <button
+            type="button"
+            onClick={() => void unlinkDiscord()}
+            className="shrink-0 rounded-lg border border-neutral-700 px-3 py-1.5 text-sm text-neutral-300 transition hover:bg-neutral-800"
+          >
+            Desconectar
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={connectDiscord}
+            className="shrink-0 rounded-lg bg-pink-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-pink-500"
+          >
+            Conectar Discord
+          </button>
+        )}
+      </Card>
 
       {loading && <p className="text-neutral-500">Carregando...</p>}
 

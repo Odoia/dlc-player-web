@@ -55,3 +55,8 @@ export function steamLoginUrl(): string {
 export async function logoutRequest(): Promise<void> {
   await fetch(`${env.apiUrl}/logout`, { method: 'DELETE', credentials: 'include' })
 }
+
+// Conectar/verificar Discord: navegacao top-level pro OAuth (fora do /api/v1).
+export function discordConnectUrl(): string {
+  return `${env.apiUrl}/auth/discord`
+}
