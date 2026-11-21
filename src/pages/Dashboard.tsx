@@ -3,41 +3,47 @@ import { useAuth } from '../auth/AuthContext'
 import { api, ApiError } from '../api/client'
 import { Card } from '../components/ui'
 
-type Stats = Record<string, unknown>
-
-// Rotulos amigaveis pras chaves que o ingest devolver (Fase 1: o que vier vira card).
-const LABELS: Record<string, string> = {
-  kills: 'Abates',
-  deaths: 'Mortes',
-  kd: 'K/D',
-  playtime_hours: 'Horas jogadas',
-  playtime_seconds: 'Tempo de jogo',
-  honor: 'Honra',
-  reputation: 'Reputacao',
+type ServerStats = {
+  server_id: string
+  name: string
+  kills: number
+  deaths: number
+  kd: number
+  playtime_seconds: number
+  playtime_hours: number
+  sessions: number
 }
 
-function label(key: string): string {
-  return LABELS[key] || key.replace(/_/g, ' ')
-}
+type StatsResponse = { servers: ServerStats[] }
 
-function fmt(value: unknown): string {
-  if (value == null) return '—'
-  if (typeof value === 'number') return value.toLocaleString('pt-BR')
-  return String(value)
+const fmt = (n: number) => n.toLocaleString('pt-BR')
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <Card className="p-4">
+      <p className="text-xs text-neutral-500">{label}</p>
+      <p className="mt-1 text-2xl font-semibold text-neutral-100">{value}</p>
+    </Card>
+  )
 }
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [statsError, setStatsError] = useState('')
+  const [servers, setServers] = useState<ServerStats[]>([])
+  const [selectedId, setSelectedId] = useState('')
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     api
-      .get<Stats>('/me/stats')
-      .then(setStats)
+      .get<StatsResponse>('/me/stats')
+      .then((d) => {
+        const list = d.servers ?? []
+        setServers(list)
+        if (list.length) setSelectedId(list[0].server_id)
+      })
       .catch((e) =>
-        setStatsError(
+        setError(
           e instanceof ApiError
             ? 'Estatisticas indisponiveis no momento.'
             : 'Erro ao carregar as estatisticas.',
@@ -48,7 +54,7 @@ export default function Dashboard() {
 
   if (!user) return null
 
-  const entries = stats ? Object.entries(stats) : []
+  const selected = servers.find((s) => s.server_id === selectedId) ?? null
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
@@ -75,31 +81,57 @@ export default function Dashboard() {
         </button>
       </header>
 
-      <h2 className="mb-3 text-sm font-medium text-neutral-400">Suas estatisticas</h2>
-
       {loading && <p className="text-neutral-500">Carregando...</p>}
 
-      {!loading && statsError && (
+      {!loading && error && (
         <Card>
-          <p className="text-sm text-neutral-400">{statsError}</p>
+          <p className="text-sm text-neutral-400">{error}</p>
         </Card>
       )}
 
-      {!loading && !statsError && entries.length === 0 && (
+      {!loading && !error && servers.length === 0 && (
         <Card>
           <p className="text-sm text-neutral-400">Ainda sem estatisticas registradas.</p>
         </Card>
       )}
 
-      {!loading && !statsError && entries.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {entries.map(([key, value]) => (
-            <Card key={key} className="p-4">
-              <p className="text-xs text-neutral-500 capitalize">{label(key)}</p>
-              <p className="mt-1 text-2xl font-semibold text-neutral-100">{fmt(value)}</p>
-            </Card>
-          ))}
-        </div>
+      {!loading && !error && servers.length > 0 && (
+        <>
+          {/* Seletor de servidor (so aparece se jogou em mais de um) */}
+          {servers.length > 1 && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {servers.map((s) => (
+                <button
+                  key={s.server_id}
+                  type="button"
+                  onClick={() => setSelectedId(s.server_id)}
+                  className={`rounded-lg px-3 py-1.5 text-sm transition ${
+                    s.server_id === selectedId
+                      ? 'bg-pink-600 text-white'
+                      : 'border border-neutral-700 text-neutral-300 hover:bg-neutral-800'
+                  }`}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selected && (
+            <>
+              <h2 className="mb-3 text-sm font-medium text-neutral-400">
+                Estatisticas em <span className="text-neutral-200">{selected.name}</span>
+              </h2>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <StatCard label="Abates" value={fmt(selected.kills)} />
+                <StatCard label="Mortes" value={fmt(selected.deaths)} />
+                <StatCard label="K/D" value={selected.kd.toLocaleString('pt-BR')} />
+                <StatCard label="Horas jogadas" value={fmt(selected.playtime_hours)} />
+                <StatCard label="Sessoes" value={fmt(selected.sessions)} />
+              </div>
+            </>
+          )}
+        </>
       )}
     </div>
   )
