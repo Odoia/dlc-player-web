@@ -18,6 +18,13 @@ type StatsResponse = { servers: ServerStats[] }
 
 const fmt = (n: number) => n.toLocaleString('pt-BR')
 
+function fmtDur(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  if (h > 0) return `${h}h ${m}min`
+  return `${m}min`
+}
+
 function discordNotice(): string {
   const v = new URLSearchParams(window.location.search).get('discord')
   if (v === 'ok') return 'Discord conectado e verificado ✓'
@@ -36,8 +43,27 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 export default function Dashboard() {
-  const { user, logout, connectDiscord, unlinkDiscord } = useAuth()
+  const { user, logout, connectDiscord, unlinkDiscord, redeemHonra } = useAuth()
   const notice = discordNotice()
+  const [redeemMsg, setRedeemMsg] = useState('')
+  const [redeeming, setRedeeming] = useState(false)
+
+  async function handleRedeem() {
+    setRedeeming(true)
+    setRedeemMsg('')
+    try {
+      const amount = await redeemHonra()
+      setRedeemMsg(
+        amount > 0
+          ? `Resgatou ${amount} honra! Vai pingar no jogo no seu proximo login.`
+          : 'Nada pra resgatar.',
+      )
+    } catch {
+      setRedeemMsg('Nao deu pra resgatar agora. Tenta de novo.')
+    } finally {
+      setRedeeming(false)
+    }
+  }
   const [servers, setServers] = useState<ServerStats[]>([])
   const [selectedId, setSelectedId] = useState('')
   const [error, setError] = useState('')
@@ -129,6 +155,39 @@ export default function Dashboard() {
           </button>
         )}
       </Card>
+
+      {/* Honra por voz — resgate. So aparece com o Discord vinculado. */}
+      {user.discord_linked && (
+        <Card className="mb-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-neutral-200">Honra por voz</p>
+              <p className="text-xs text-neutral-500">
+                {fmtDur(user.voice_seconds)} em call · {fmt(user.honra_lifetime)} de honra no total
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-2xl font-semibold text-pink-400">
+                {user.pending_honra}
+                <span className="text-sm text-neutral-500">/100</span>
+              </p>
+              <p className="text-xs text-neutral-500">pra resgatar</p>
+            </div>
+          </div>
+          {user.pending_honra >= 100 && (
+            <p className="mt-2 text-xs text-amber-400">Cheio — resgate pra continuar ganhando.</p>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleRedeem()}
+            disabled={redeeming || user.pending_honra <= 0}
+            className="mt-3 w-full rounded-lg bg-pink-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-pink-500 disabled:opacity-50"
+          >
+            {redeeming ? 'Resgatando...' : `Resgatar ${user.pending_honra} honra`}
+          </button>
+          {redeemMsg && <p className="mt-2 text-sm text-green-400">{redeemMsg}</p>}
+        </Card>
+      )}
 
       {loading && <p className="text-neutral-500">Carregando...</p>}
 

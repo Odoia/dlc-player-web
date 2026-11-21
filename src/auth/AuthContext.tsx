@@ -9,6 +9,10 @@ export type User = {
   profile_url: string | null
   discord_username: string | null
   discord_linked: boolean
+  voice_seconds: number
+  pending_honra: number
+  claimed_honra: number
+  honra_lifetime: number
 }
 
 type AuthValue = {
@@ -17,6 +21,7 @@ type AuthValue = {
   loginWithSteam: () => void
   connectDiscord: () => void
   unlinkDiscord: () => Promise<void>
+  redeemHonra: () => Promise<number>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -49,6 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await api.del<User>('/me/discord'))
   }
 
+  // Resgata TODA a honra pendente (zera). Retorna quanto foi resgatado.
+  async function redeemHonra(): Promise<number> {
+    const res = await api.post<User & { redeemed: number }>('/me/redeem')
+    setUser(res)
+    return res.redeemed
+  }
+
   async function logout() {
     try {
       await logoutRequest()
@@ -62,7 +74,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Ctx value={{ user, ready, loginWithSteam, connectDiscord, unlinkDiscord, logout, refreshUser }}>
+    <Ctx
+      value={{
+        user,
+        ready,
+        loginWithSteam,
+        connectDiscord,
+        unlinkDiscord,
+        redeemHonra,
+        logout,
+        refreshUser,
+      }}
+    >
       {children}
     </Ctx>
   )
