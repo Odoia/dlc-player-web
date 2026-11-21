@@ -7,8 +7,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-ENV VITE_API_URL=https://api.deliciouslabs.online
-ENV VITE_APP_NAME="Delicious Labs"
+ENV VITE_API_URL=https://api-jogador.deliciouslabs.online
+ENV VITE_APP_NAME="Portal do Jogador"
 RUN npm run build
 
 FROM nginx:1.27-alpine
