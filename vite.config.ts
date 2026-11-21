@@ -10,6 +10,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      // Aposentado: o Cloudflare cacheia o sw.js (max-age 4h) e o SW ficava
+      // servindo JS velho a cada deploy. selfDestroying gera um SW que se
+      // desregistra + limpa o cache, curando os navegadores presos.
+      selfDestroying: true,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png', 'icon.svg'],
       manifest: {
