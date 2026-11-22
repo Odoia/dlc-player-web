@@ -55,7 +55,7 @@ export default function Dashboard() {
       const amount = await redeemHonra()
       setRedeemMsg(
         amount > 0
-          ? `Resgatou ${amount} honra! Cai na sua reputacao em alguns segundos — fique online, nao precisa relogar.`
+          ? `Resgatou ${amount} honra! Sua honra sera entregue em breve — fique online.`
           : 'Nada pra resgatar.',
       )
     } catch {
@@ -163,7 +163,7 @@ export default function Dashboard() {
             <div className="min-w-0">
               <p className="text-sm font-medium text-neutral-200">Honra por voz</p>
               <p className="text-xs text-neutral-500">
-                {fmtDur(user.voice_seconds)} em call · {fmt(user.honra_lifetime)} de honra no total
+                {fmtDur(user.voice_seconds)} em call · {fmt(user.honra_lifetime - user.pending_honra)} de honra resgatada
               </p>
             </div>
             <div className="shrink-0 text-right">
