@@ -55,7 +55,7 @@ export default function Dashboard() {
       const amount = await redeemHonra()
       setRedeemMsg(
         amount > 0
-          ? `Resgatou ${amount} honra! Sua honra sera entregue em breve — fique online.`
+          ? `Resgatou ${amount} honra! Sua honra sera entregue em breve.`
           : 'Nada pra resgatar.',
       )
     } catch {
