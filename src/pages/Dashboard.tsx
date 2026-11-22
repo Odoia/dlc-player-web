@@ -55,7 +55,7 @@ export default function Dashboard() {
       const amount = await redeemHonra()
       setRedeemMsg(
         amount > 0
-          ? `Resgatou ${amount} honra! Vai pingar no jogo no seu proximo login.`
+          ? `Resgatou ${amount} honra! Cai na sua reputacao em alguns segundos — fique online, nao precisa relogar.`
           : 'Nada pra resgatar.',
       )
     } catch {
